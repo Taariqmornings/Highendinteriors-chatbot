@@ -1,0 +1,549 @@
+<!-- High-End Interiors Smart Chatbot -->
+<style>
+  #chatbotContainer {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 320px;
+    max-height: 480px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: none;
+    flex-direction: column;
+    z-index: 2147483647; /* VERY high */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    transform: translateZ(0); /* helps with stacking in some browsers */
+    will-change: transform;
+  }
+
+  #chatHeader {
+    background: #800000;
+    color: #fff;
+    padding: 12px;
+    border-radius: 10px 10px 0 0;
+    text-align: center;
+    font-weight: bold;
+    position: relative;
+    user-select: none;
+  }
+
+  #closeChatbot {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  #closeChatbot:hover {
+    color: #ff9999;
+  }
+
+  #chatLog {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    background: #f9f9f9;
+    scroll-behavior: smooth;
+    max-height: calc(100% - 100px);
+  }
+
+  .message {
+    max-width: 80%;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 15px;
+    clear: both;
+    word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    font-size: 14px;
+  }
+  .botMessage {
+    background: #d9f0e8;
+    color: #333;
+    float: left;
+    border-bottom-left-radius: 0;
+  }
+  .userMessage {
+    background: #800000;
+    color: white;
+    float: right;
+    border-bottom-right-radius: 0;
+  }
+
+  #typingIndicator {
+    display: none;
+    padding-left: 12px;
+    padding-bottom: 10px;
+  }
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 4px;
+    background: #800000;
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+  }
+  .dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
+
+  #quickButtonsContainer {
+    background: #f4f4f4;
+    border-top: 1px solid #ddd;
+    padding: 8px 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 50px;
+    z-index: 2;
+  }
+  .quickBtn {
+    display: inline-block;
+    margin-right: 8px;
+    padding: 6px 12px;
+    background: #800000;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.3s ease;
+  }
+  .quickBtn:hover, .quickBtn:focus {
+    background: #b22222;
+    outline: none;
+  }
+
+  #inputArea {
+    display: flex;
+    padding: 8px 10px;
+    border-top: 1px solid #ddd;
+    background: #fff;
+    border-radius: 0 0 10px 10px;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+  }
+  #userInput {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  #userInput:focus {
+    outline-color: #800000;
+  }
+  #sendButton {
+    margin-left: 8px;
+    padding: 8px 15px;
+    background: #800000;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+  #sendButton:hover, #sendButton:focus {
+    background: #b22222;
+    outline: none;
+  }
+
+  @media (max-width: 400px) {
+    #chatbotContainer {
+      width: 90vw;
+      right: 5vw;
+      bottom: 70px;
+      max-height: 60vh;
+    }
+    #chatbotToggle {
+      width: 80px;
+      height: 80px;
+      bottom: 15px;
+      right: 15px;
+      background-size: 48px 48px;
+    }
+  }
+
+  #chatbotToggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #800000;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 2147483647;
+    background-image: url('https://img.icons8.com/emoji/48/robot-emoji.png');
+    background-repeat: no-repeat;
+    background-size: 36px 36px;
+    background-position: center;
+    text-indent: -9999px;
+    transition: background-color 0.3s ease;
+  }
+  #chatbotToggle:hover, #chatbotToggle:focus {
+    background-color: #b22222;
+    outline: none;
+  }
+
+  #chatbotContainer.show {
+    display: flex !important;
+    animation: fadeInUp 0.4s ease forwards;
+  }
+  #chatbotContainer.hide {
+    animation: fadeOutDown 0.4s ease forwards;
+  }
+  @keyframes fadeInUp {
+    from {opacity: 0; transform: translateY(20px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+  @keyframes fadeOutDown {
+    from {opacity: 1; transform: translateY(0);}
+    to {opacity: 0; transform: translateY(20px);}
+  }
+</style>
+
+<script>
+  window.addEventListener('load', function() {
+    // FAQ data and triggers - unchanged from your original code
+    const faqData = {
+      "quote": "For a quote, please email daanyaal.highendinteriors@gmail.com or call 078 443 2116 / 082 978 2240.",
+      "booking": "To book a consultation, email daanyaal.highendinteriors@gmail.com or call us at 078 443 2116 / 082 978 2240.",
+      "services": "We offer kitchens, decks, pergolas, custom furniture, decor, and yacht maintenance services.",
+      "delivery": "Yes, delivery is available. Costs depend on distance and project size.",
+      "hours": "We’re open Monday to Friday, 9:00 AM – 5:00 PM. Saturdays by appointment only. Closed on Sundays.",
+      "contact": "Contact us at daanyaal.highendinteriors@gmail.com or call 078 443 2116 / 082 978 2240.",
+      "location": "We are proudly based in Cape Town, South Africa, and serve clients nationwide.",
+      "payment": "We accept EFT (bank transfer), credit card, and cash payments.",
+      "wood": "We work with all types of wood, including oak, pine, meranti, and more. Specific wood types can also be sourced upon customer request.",
+      "custom": "Yes, we specialize in fully custom-designed furniture and also offer a selection of pre-designed pieces.",
+      "time": "Our projects typically take 7 to 10 working days, depending on complexity and location.",
+      "warranty": "While we do not provide formal warranties, we can apply professional fire-retardant coatings to reduce fire risks.",
+      "yachts": "We offer maintenance services for yachts of all sizes, tailored to each vessel’s needs.",
+      "consultation": "Yes, we offer free design consultations and quotations. Professionally rendered 3D drawings in SketchUp are available at an additional cost.",
+      "portfolio": "<a href='https://drive.google.com/file/d/15jz40P1xtETc_exp0c4eO9OYZlgEnWZZ/view?usp=sharing' target='_blank'>View our Portfolio</a>",
+      "areas": "We serve all areas within Cape Town and offer services across South Africa. International services are available for large-scale projects.",
+      "inspection": "Site inspections within Cape Town are usually free. Fees may apply for areas outside Cape Town depending on distance.",
+      "pricing": "Pricing is determined after consultation and supplier research to ensure an accurate estimate. Options may vary based on material choice.",
+      "design": "Our team can help you with creative design ideas to make your project truly unique.",
+      "specific": "Yes, you can request only decking, pergolas, or furniture without committing to a full renovation.",
+      "businessprojects": "Yes, we take on commercial and business wood projects for offices, cafes, and others.",
+      "hospitality": "Yes, we build and decorate hospitality spaces like lodges and hostels.",
+      "corporate": "Business and commercial woodwork projects are welcome — desks, counters, displays.",
+      "retaildisplays": "We build retail units, displays, and shop decor items as per requirements.",
+      "marinework": "Our marine woodwork includes storage, panels, cabinets, and more for boats.",
+      "ecofriendly": "We strive to use sustainable wood and low VOC finishes whenever possible.",
+      "urgentjobs": "We can accept urgent projects depending on availability. Contact us directly to discuss.",
+      "insurance": "While we don’t provide insurance, clients are welcome to arrange their own during the project.",
+      "repairs": "Repairs and restoration services are available for wood furniture and structures.",
+      "storage": "Custom storage solutions like cabinets and shelves can be designed and built.",
+      "paint": "Painting and finishing services are available as part of your woodwork package.",
+      "privacy": "We respect your privacy and do not share your data without consent.",
+      "refunds": "Refunds depend on the nature of the project. Please contact us directly to discuss.",
+      "consultationfee": "Initial consultations are free. Design renderings and site visits may carry a fee.",
+      "scale": "From small furniture pieces to large renovations, we handle all scales.",
+      "materials": "We source premium wood and materials from trusted suppliers.",
+      "customer": "Customer satisfaction is our highest priority. We work closely throughout the project.",
+      "feedback": "We welcome customer feedback to improve our services.",
+      "warrantyinfo": "We provide limited warranty on workmanship; materials follow supplier warranties.",
+      "quoteprocess": "Quotes are prepared after on-site inspection or detailed requirements submission.",
+      "installation": "Installation services are included in most projects within Cape Town area.",
+      "aftercare": "We provide aftercare advice and support post-project completion.",
+      "schedule": "We try to schedule projects promptly based on client availability and workload.",
+      "emergency": "For emergencies, contact us immediately by phone for fast assistance.",
+      "paymentplans": "We offer flexible payment plans on approved credit. Contact for details.",
+      "discounts": "Discounts may be available for repeat customers or large projects.",
+      "partnerships": "We collaborate with architects, designers, and contractors for larger projects.",
+      "cleaning": "Post-construction cleaning is included in our service.",
+      "guarantee": "We stand behind our craftsmanship with a satisfaction guarantee.",
+      "inspectionfee": "Inspection fees apply for sites outside the Cape Town metro area.",
+      "team": "Our skilled team includes carpenters, designers, and project managers.",
+      "safety": "We follow strict safety standards during all work.",
+      "environment": "We minimize waste and recycle materials whenever possible.",
+      "quotesupport": "Our team is ready to assist with quote questions via email or phone.",
+      "hoursoperation": "We operate weekdays 9 am to 5 pm, Saturdays by appointment.",
+      "contactinfo": "Reach us at daanyaal.highendinteriors@gmail.com or 078 443 2116 / 082 978 2240.",
+      "customquote": "Custom quotes can be requested by providing project details and measurements.",
+      "sitevisit": "Site visits are arranged after initial contact to discuss project specifics.",
+      "response": "We strive to respond to inquiries within 24 business hours.",
+      "modifications": "Project modifications can be made during the build phase upon agreement.",
+      "warrantyclaim": "Warranty claims are handled promptly when workmanship issues arise.",
+      "privacyinfo": "Your data is kept confidential and used solely for project communication.",
+      "quality": "We use only high-quality wood and finishes for durability.",
+      "paymentmethods": "Payments accepted via EFT, credit card, and cash.",
+      "timeframe": "Typical project timeframe is 7-10 working days post design approval.",
+      "designservices": "Design services available for a small additional fee.",
+      "consultationhours": "Consultations can be scheduled weekdays 9 am to 4 pm.",
+      "feedbackwelcome": "We appreciate all client feedback for continuous improvement.",
+      "deliveryareas": "Delivery is available throughout Cape Town and selected other areas.",
+      "guaranteedwork": "All work is guaranteed to meet client expectations or adjustments made.",
+      "emergencycontact": "For urgent matters, call us directly at the numbers provided.",
+      "quoteemail": "Quotes can be requested by emailing detailed requirements to daanyaal.highendinteriors@gmail.com."
+    };
+
+    const triggers = {
+      "quote": ["quote", "price", "cost", "estimate", "quotation"],
+      "booking": ["book", "booking", "schedule", "appointment"],
+      "services": ["service", "services", "offer", "provide"],
+      "delivery": ["deliver", "delivery", "ship"],
+      "hours": ["hours", "open", "opening", "close", "closing", "time"],
+      "contact": ["contact", "email", "phone", "call"],
+      "location": ["location", "where", "address", "place"],
+      "payment": ["payment", "pay", "method", "methods"],
+      "wood": ["wood", "type", "material", "materials"],
+      "custom": ["custom", "customize", "design"],
+      "time": ["timeframe", "duration", "how long", "time"],
+      "warranty": ["warranty", "guarantee", "fire", "fire retardant", "fireproof"],
+      "yachts": ["yacht", "marine", "boat", "ship"],
+      "consultation": ["consultation", "design", "3d", "render", "drawing"],
+      "portfolio": ["portfolio", "work", "samples", "pictures"],
+      "areas": ["areas", "service area", "coverage", "location"],
+      "inspection": ["inspection", "site visit", "visit"],
+      "pricing": ["pricing", "price", "quote", "cost", "estimate"],
+      // Add more keys and triggers if needed
+    };
+
+    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotContainer = document.getElementById('chatbotContainer');
+    const closeChatbot = document.getElementById('closeChatbot');
+    const chatLog = document.getElementById('chatLog');
+    const userInput = document.getElementById('userInput');
+    const sendButton = document.getElementById('sendButton');
+    const quickButtonsContainer = document.getElementById('quickButtonsContainer');
+    const typingIndicator = document.getElementById('typingIndicator');
+
+    let welcomeShown = false;
+    let isInQuoteFlow = false;
+
+    function addMessage(text, sender) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message');
+      msgDiv.classList.add(sender === 'user' ? 'userMessage' : 'botMessage');
+      msgDiv.innerHTML = text;
+      chatLog.appendChild(msgDiv);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function showTyping() {
+      typingIndicator.style.display = 'block';
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    function hideTyping() {
+      typingIndicator.style.display = 'none';
+    }
+
+    // Wait for the next user input (returns Promise)
+    function waitForInput() {
+      return new Promise(resolve => {
+        function onInput(e) {
+          const input = userInput.value.trim();
+          if (!input) return;
+          addMessage(input, 'user');
+          userInput.value = '';
+          userInput.removeEventListener('keydown', onKeyDown);
+          sendButton.removeEventListener('click', onClick);
+          resolve(input);
+        }
+        function onKeyDown(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onInput();
+          }
+        }
+        function onClick() {
+          onInput();
+        }
+        userInput.addEventListener('keydown', onKeyDown);
+        sendButton.addEventListener('click', onClick);
+      });
+    }
+
+    async function startQuoteFlow() {
+      if (isInQuoteFlow) return; // Prevent multiple instances
+      isInQuoteFlow = true;
+      try {
+        addMessage("Great! Let's get you a quote. What’s your full name?", "bot");
+        const name = await waitForInput();
+
+        addMessage(`Thanks, ${name}! What’s the best contact number or email for you?`, "bot");
+        const contact = await waitForInput();
+
+        addMessage("Got it. What type of woodwork or service are you looking for? (e.g., Kitchen, Deck, Pergola)", "bot");
+        const service = await waitForInput();
+
+        addMessage("Awesome. Where will the work take place? (City/Suburb)", "bot");
+        const location = await waitForInput();
+
+        addMessage("When would you prefer us to come and give you the quote? Please provide a date or time.", "bot");
+        const preferredTime = await waitForInput();
+
+        addMessage("Do you have any special notes or messages you'd like to add?", "bot");
+        const notes = await waitForInput();
+
+        addMessage("Thank you! Submitting your request now...", "bot");
+
+        const response = await fetch("https://script.google.com/macros/s/AKfycbyKJK0AQt96a7fqnedbev6KHxTq2TN1vWNgXD_zTtzY_yhoKaNiXLAGSYOEBSVUZBgC/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            contact,
+            service,
+            location,
+            preferredTime,
+            notes,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        if (response.ok) {
+          addMessage("Your quote request has been sent! We'll get back to you shortly.", "bot");
+        } else {
+          addMessage("Oops! Something went wrong while sending your request. Please try again later.", "bot");
+        }
+      } catch (err) {
+        addMessage("There was an error with your input or connection. Please try again.", "bot");
+      }
+      isInQuoteFlow = false;
+    }
+
+    function getResponse(input) {
+      input = input.toLowerCase();
+      for (const key in triggers) {
+        for (const triggerWord of triggers[key]) {
+          if (input.includes(triggerWord)) {
+            if (key === 'quote') {
+              if (!isInQuoteFlow) {
+                startQuoteFlow();
+              }
+              return ""; // handled separately
+            }
+            return faqData[key] || "Sorry, I don't have information on that.";
+          }
+        }
+      }
+      return "Sorry, I didn't understand that. You can ask me about our services, bookings, pricing, or how to contact us.";
+    }
+
+    function handleSend() {
+      if (isInQuoteFlow) return; // Ignore normal input while quote flow active
+      const input = userInput.value.trim();
+      if (!input) return;
+      addMessage(input, 'user');
+      userInput.value = '';
+      showTyping();
+
+      setTimeout(() => {
+        const response = getResponse(input);
+        hideTyping();
+        if (response) addMessage(response, 'bot');
+      }, 1000);
+    }
+
+    sendButton.addEventListener('click', handleSend);
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    // Quick buttons
+    function addQuickButtons() {
+      Object.keys(faqData).forEach(key => {
+        const btn = document.createElement('button');
+        btn.classList.add('quickBtn');
+        btn.textContent = key.charAt(0).toUpperCase() + key.slice(1);
+        btn.addEventListener('click', () => {
+          addMessage(btn.textContent, 'user');
+          if (key === 'quote') {
+            if (!isInQuoteFlow) startQuoteFlow();
+            return;
+          }
+          showTyping();
+          setTimeout(() => {
+            const response = faqData[key];
+            hideTyping();
+            addMessage(response, 'bot');
+          }, 800);
+        });
+        quickButtonsContainer.appendChild(btn);
+      });
+    }
+
+    addQuickButtons();
+
+    chatbotToggle.addEventListener('click', () => {
+      if (chatbotContainer.style.display === 'flex') {
+        chatbotContainer.classList.remove('show');
+        chatbotContainer.classList.add('hide');
+        setTimeout(() => {
+          chatbotContainer.style.display = 'none';
+          chatbotContainer.classList.remove('hide');
+        }, 400);
+      } else {
+        chatbotContainer.style.display = 'flex';
+        chatbotContainer.classList.add('show');
+
+        if (!welcomeShown) {
+          addMessage("Hello! Welcome to High-End Interiors. How can I help you today?", 'bot');
+          welcomeShown = true;
+        }
+      }
+    });
+
+    closeChatbot.addEventListener('click', () => {
+      chatbotContainer.classList.remove('show');
+      chatbotContainer.classList.add('hide');
+      setTimeout(() => {
+        chatbotContainer.style.display = 'none';
+        chatbotContainer.classList.remove('hide');
+      }, 400);
+    });
+
+  });
+</script>
+
+
+
+<!-- Chatbot HTML -->
+<div id="chatbotToggle" tabindex="0" role="button" aria-label="Open Chatbot">Chat</div>
+
+<div id="chatbotContainer" aria-live="polite" aria-label="Chatbot window" role="region" aria-hidden="true" >
+  <div id="chatHeader">
+    High-End Interiors Chatbot
+    <button id="closeChatbot" aria-label="Close chatbot">&times;</button>
+  </div>
+  <div id="chatLog" aria-live="polite" aria-atomic="false"></div>
+  <div id="typingIndicator" aria-live="polite" aria-atomic="true" role="status">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+  </div>
+  <div id="quickButtonsContainer" role="list"></div>
+  <div id="inputArea">
+    <input id="userInput" type="text" placeholder="Type your message here..." aria-label="Chat input" autocomplete="off" />
+    <button id="sendButton" aria-label="Send message">Send</button>
+  </div>
+</div>
